@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Opportunities — Effibel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    /* BASE STYLES FROM ORIGINAL */
+    :root {
+      --bg: #f4f7ff;
+      --panel: rgba(255, 255, 255, 0.6);
+      --panel-border: rgba(0, 0, 0, 0.1);
+      --text: #1a1d2e;
+      --muted: #5e6485;
+      --accent: #3b66ff;
+      --accent-glow: rgba(59, 102, 255, 0.1);
+      --header-bg: rgba(255, 255, 255, 0.85);
+      --logo-filter: brightness(0.8) contrast(1.3) saturate(1.2);
+      --input-bg: rgba(255, 255, 255, 0.8);
+      --success: #28a745;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b0e1a;
+      --panel: rgba(22, 26, 53, 0.4);
+      --panel-border: rgba(122, 162, 255, 0.15);
+      --text: #f0f2faff;
+      --muted: #9499b8;
+      --accent: #7aa2ff;
+      --accent-glow: rgba(122, 162, 255, 0.2);
+      --header-bg: rgba(11, 14, 26, 0.75);
+      --logo-filter: brightness(1.2) contrast(1.1);
+      --input-bg: rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      transition: background 0.4s ease;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(var(--accent) 0.8px, transparent 0.8px);
+      background-size: 32px 32px; opacity: 0.1; z-index: -1; pointer-events: none;
+    }
+
+    header {
+      position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 1100px; background: var(--header-bg);
+      backdrop-filter: blur(20px); z-index: 1000; border-radius: 100px;
+      border: 1px solid var(--panel-border); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      padding: 0.6rem 1.8rem;
+    }
+
+    .header-inner { display: flex; align-items: center; justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 1.5rem; }
+    .brand-logo { height: 26px; width: auto; filter: var(--logo-filter); transition: filter 0.4s ease; }
+    .v-divider { width: 1px; height: 20px; background: var(--panel-border); }
+
+    /* LANG SELECTOR */
+    .lang-selector { position: relative; font-size: 0.85rem; cursor: pointer; }
+    .lang-current {
+      display: flex; align-items: center; justify-content: center; min-width: 48px;
+      padding: 4px 0; border-radius: 20px; background: rgba(0,0,0,0.05);
+      border: 1px solid var(--panel-border); color: var(--text); font-weight: 700;
+      text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
+    }
+    .lang-dropdown {
+      position: absolute; top: calc(100% + 10px); left: 0; background: var(--header-bg);
+      backdrop-filter: blur(25px); border: 1px solid var(--panel-border);
+      border-radius: 12px; padding: 6px; min-width: 140px; display: none; z-index: 1001;
+    }
+    .lang-selector:hover .lang-dropdown { display: block; }
+    .lang-option { padding: 10px 14px; border-radius: 8px; transition: 0.2s; color: var(--text); }
+    .lang-option:hover { background: var(--accent); color: white; }
+
+    /* THEME SWITCH */
+    .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.06); padding: 4px 8px; border-radius: 20px; border: 1px solid var(--panel-border); }
+    .theme-switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .theme-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--panel-border); transition: .4s; border-radius: 34px; }
+    .theme-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .theme-slider { background-color: var(--accent); }
+    input:checked + .theme-slider:before { transform: translateX(22px); }
+    .switch-icon { width: 14px; height: 14px; color: var(--muted); }
+
+    /* FORM STYLING */
+    main { max-width: 700px; margin: auto; padding: 12rem 2rem 4rem; }
+    .hero-text { text-align: center; margin-bottom: 3rem; }
+    h1 { font-size: 2.5rem; letter-spacing: -1px; margin-bottom: 1rem; }
+    
+    .card { background: var(--panel); padding: 3rem; border-radius: 24px; border: 1px solid var(--panel-border); backdrop-filter: blur(10px); position: relative; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 0.9rem; border-radius: 8px; border: 1px solid var(--panel-border);
+      background: var(--input-bg); color: var(--text); font-family: inherit; font-size: 1rem; transition: 0.3s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent); outline: none; }
+
+    .btn-submit {
+      width: 100%; padding: 1rem; border-radius: 8px; background: var(--accent); color: white;
+      border: none; font-weight: 600; cursor: pointer; transition: 0.3s; font-size: 1rem;
+    }
+    .btn-submit:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+    /* LOADING & SUCCESS */
+    #loading-overlay { display: none; flex-direction: column; align-items: center; justify-content: center; margin-top: 2rem; }
+    .loader {
+      border: 3px solid var(--panel-border); border-top: 3px solid var(--accent);
+      border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #success-msg { display: none; text-align: center; padding: 2rem 0; }
+    #success-msg h3 { color: var(--success); margin-bottom: 1rem; font-size: 1.5rem; }
+    #success-msg p { color: var(--muted); }
+
+    @media (max-width: 600px) {
+      header { width: 100%; border-radius: 0; top: 0; }
+      main { padding-top: 8rem; }
+      h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <img src="https://i.ibb.co/23Md2Hdx/logo.png" alt="Effibel" class="brand-logo">
+      <div class="v-divider"></div>
+      <div class="lang-selector">
+        <div class="lang-current" id="current-lang-display">EN</div>
+        <div class="lang-dropdown">
+          <div class="lang-option" onclick="setLang('EN')">English</div>
+          <div class="lang-option" onclick="setLang('ET')">Eesti</div>
+          <div class="lang-option" onclick="setLang('JA')">日本語</div>
+          <div class="lang-option" onclick="setLang('ES')">Español</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-switch-wrapper">
+        <svg class="switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle">
+          <span class="theme-slider"></span>
+        </label>
+        <svg class="switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="hero-text">
+    <h1 data-t="opp_title">Become an Effibel data annotator today</h1>
+  </div>
+
+  <div class="card">
+    <form id="opp-form">
+      <div class="form-group">
+        <label data-t="label_name">Full Name</label>
+        <input type="text" required>
+      </div>
+      <div class="form-group">
+        <label data-t="label_email">Email Address</label>
+        <input type="email" required>
+      </div>
+      <div class="form-group">
+        <label data-t="label_cv">Upload CV (PDF)</label>
+        <input type="file" accept=".pdf" required>
+      </div>
+      <div class="form-group">
+        <label data-t="label_address">Current Address</label>
+        <input type="text" required>
+      </div>
+      <div class="form-group">
+        <label data-t="label_interest">Primary Interest</label>
+        <select required>
+          <option value="" disabled selected data-t="opt_select">Select area...</option>
+          <option value="languages" data-t="opt_lang">Languages</option>
+          <option value="mathematics" data-t="opt_math">Mathematics</option>
+          <option value="physics" data-t="opt_phys">Physics</option>
+          <option value="law" data-t="opt_law">Law</option>
+          <option value="other" data-t="opt_other">Other</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-submit" data-t="btn_submit">Submit Application</button>
+    </form>
+
+    <div id="loading-overlay">
+      <div class="loader"></div>
+      <p data-t="msg_loading">Sending...</p>
+    </div>
+
+    <div id="success-msg">
+      <h3 data-t="msg_success_title">Application Sent</h3>
+      <p data-t="msg_success_body">We will contact you as soon as possible after we review your application.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+  // TRANSLATIONS
+  const translations = {
+    EN: {
+      opp_title: "Become an Effibel data annotator today",
+      label_name: "Full Name",
+      label_email: "Email Address",
+      label_cv: "Upload CV (PDF)",
+      label_address: "Current Address",
+      label_interest: "Primary Interest",
+      opt_select: "Select area...",
+      opt_lang: "Languages",
+      opt_math: "Mathematics",
+      opt_phys: "Physics",
+      opt_law: "Law",
+      opt_other: "Other",
+      btn_submit: "Submit Application",
+      msg_loading: "Sending...",
+      msg_success_title: "Application Sent",
+      msg_success_body: "We will contact you as soon as possible after we review your application."
+    },
+    ET: {
+      opp_title: "Hakka Effibeli andmemärgendajaks juba täna",
+      label_name: "Täisnimi",
+      label_email: "E-posti aadress",
+      label_cv: "Laadi üles CV (PDF)",
+      label_address: "Praegune aadress",
+      label_interest: "Peamine huvi",
+      opt_select: "Vali valdkond...",
+      opt_lang: "Keeled",
+      opt_math: "Matemaatika",
+      opt_phys: "Füüsika",
+      opt_law: "Õigusteadus",
+      opt_other: "Muu",
+      btn_submit: "Saada avaldus",
+      msg_loading: "Saadan...",
+      msg_success_title: "Avaldus saadetud",
+      msg_success_body: "Võtame teiega ühendust niipea kui võimalik pärast teie avalduse läbivaatamist."
+    },
+    JA: {
+      opp_title: "Effibelのデータアノテーターになりませんか",
+      label_name: "氏名",
+      label_email: "メールアドレス",
+      label_cv: "CVをアップロード (PDF)",
+      label_address: "現住所",
+      label_interest: "主な関心分野",
+      opt_select: "分野を選択...",
+      opt_lang: "言語",
+      opt_math: "数学",
+      opt_phys: "物理学",
+      opt_law: "法学",
+      opt_other: "その他",
+      btn_submit: "応募する",
+      msg_loading: "送信中...",
+      msg_success_title: "応募完了",
+      msg_success_body: "お送りいただいた内容を確認後、担当者より折り返しご連絡いたします。"
+    },
+    ES: {
+      opp_title: "Conviértete en anotador de datos de Effibel hoy",
+      label_name: "Nombre completo",
+      label_email: "Correo electrónico",
+      label_cv: "Subir CV (PDF)",
+      label_address: "Dirección actual",
+      label_interest: "Interés principal",
+      opt_select: "Seleccionar área...",
+      opt_lang: "Idiomas",
+      opt_math: "Matemáticas",
+      opt_phys: "Física",
+      opt_law: "Derecho",
+      opt_other: "Otro",
+      btn_submit: "Enviar solicitud",
+      msg_loading: "Enviando...",
+      msg_success_title: "Solicitud enviada",
+      msg_success_body: "Nos pondremos en contacto con usted lo antes posible después de revisar su solicitud."
+    }
+  };
+
+  function setLang(code) {
+    document.getElementById('current-lang-display').innerText = code;
+    const elements = document.querySelectorAll('[data-t]');
+    elements.forEach(el => {
+      const key = el.getAttribute('data-t');
+      if (translations[code] && translations[code][key]) {
+        el.textContent = translations[code][key];
+      }
+    });
+  }
+
+  // THEME TOGGLE
+  const themeToggle = document.getElementById('theme-toggle');
+  themeToggle.addEventListener('change', () => {
+    document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+  });
+
+  // FORM SUBMISSION
+  const form = document.getElementById('opp-form');
+  const loader = document.getElementById('loading-overlay');
+  const success = document.getElementById('success-msg');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    form.style.display = 'none';
+    loader.style.display = 'flex';
+
+    // Simulate network delay
+    setTimeout(() => {
+      loader.style.display = 'none';
+      success.style.display = 'block';
+    }, 2000);
+  });
+</script>
+
+</body>
+</html>

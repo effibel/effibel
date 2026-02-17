@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Effibel — Model Evaluation & Data Strategy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+  <meta name="description" content="A research-driven studio specializing in identifying AI failure modes and creating targeted, high-signal data for smarter model performance.">
+  <meta name="keywords" content="AI model evaluation, data labelling, LLM failure modes, model diagnostics, high-quality AI data, Effibel">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://effibel.com/">
+  <meta property="og:title" content="Effibel — Targeted data for smarter AI">
+  <meta property="og:description" content="We help AI teams improve model performance by identifying weaknesses and validating results with expert-led data.">
+  <meta property="og:image" content="https://i.ibb.co/23Md2Hdx/logo.png">
+
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://effibel.com/">
+  <meta property="twitter:title" content="Effibel — Model Evaluation & Data Strategy">
+  <meta property="twitter:description" content="Research-driven data labelling and model diagnostics. Built for teams who prioritize quality over volume.">
+  <meta property="twitter:image" content="https://i.ibb.co/23Md2Hdx/logo.png">
+  
+  <style>
+    :root {
+      /* LIGHT MODE (DEFAULT) */
+      --bg: #f4f7ff;
+      --panel: rgba(255, 255, 255, 0.6);
+      --panel-border: rgba(0, 0, 0, 0.1);
+      --text: #1a1d2e;
+      --muted: #5e6485;
+      --accent: #3b66ff;
+      --accent-glow: rgba(59, 102, 255, 0.1);
+      --header-bg: rgba(255, 255, 255, 0.85);
+      --logo-filter: brightness(0.8) contrast(1.3) saturate(1.2);
+      --input-bg: rgba(255, 255, 255, 0.8);
+      --success: #28a745;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b0e1a;
+      --panel: rgba(22, 26, 53, 0.4);
+      --panel-border: rgba(122, 162, 255, 0.15);
+      --text: #f0f2faff;
+      --muted: #9499b8;
+      --accent: #7aa2ff;
+      --accent-glow: rgba(122, 162, 255, 0.2);
+      --header-bg: rgba(11, 14, 26, 0.75);
+      --logo-filter: brightness(1.2) contrast(1.1);
+      --input-bg: rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      transition: background 0.4s ease;
+      overflow-x: hidden;
+    }
+
+    /* Technical Grid Background */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: radial-gradient(var(--accent) 0.8px, transparent 0.8px);
+      background-size: 32px 32px;
+      opacity: 0.1;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Floating Header Design */
+    header {
+      position: fixed;
+      top: 1.5rem; 
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1100px;
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      border-radius: 100px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      padding: 0.6rem 0.6rem 0.6rem 1.8rem;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left { 
+      display: flex; 
+      align-items: center; 
+      gap: 1.5rem; 
+    }
+
+    .brand-logo { 
+      height: 26px; 
+      width: auto; 
+      display: block; 
+      filter: var(--logo-filter);
+      transition: filter 0.4s ease;
+    }
+
+    .v-divider { width: 1px; height: 20px; background: var(--panel-border); }
+
+    .lang-selector {
+      position: relative;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .lang-selector::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      height: 20px;
+      z-index: 1000;
+    }
+
+    .lang-current {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 48px;
+      padding: 4px 0;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.05);
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.2s;
+    }
+
+    .lang-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      background: var(--header-bg);
+      backdrop-filter: blur(25px);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 6px;
+      min-width: 140px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 1001;
+    }
+
+    .lang-selector:hover .lang-dropdown,
+    .lang-dropdown:hover {
+      display: block;
+    }
+
+    .lang-option {
+      padding: 10px 14px;
+      border-radius: 8px;
+      transition: 0.2s;
+      color: var(--text);
+      font-weight: 500;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .lang-option:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    nav {
+      background: rgba(0,0,0,0.05);
+      border-radius: 100px;
+      padding: 4px;
+      display: flex;
+      gap: 4px;
+      border: 1px solid var(--panel-border);
+    }
+
+    nav button {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 0.6rem 1.5rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 500;
+      border-radius: 100px;
+    }
+
+    nav button.active {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .theme-switch-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0,0,0,0.06);
+        padding: 4px 8px;
+        border-radius: 20px;
+        border: 1px solid var(--panel-border);
+        margin-right: 0.5rem;
+    }
+
+    .theme-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 22px;
+    }
+
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+
+    .theme-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: var(--panel-border);
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .theme-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+        z-index: 2;
+    }
+
+    input:checked + .theme-slider { background-color: var(--accent); }
+    input:checked + .theme-slider:before { transform: translateX(22px); }
+
+    .switch-icon {
+        width: 14px;
+        height: 14px;
+        color: var(--muted);
+        transition: 0.3s;
+    }
+
+    [data-theme="light"] .sun-icon { color: var(--accent); }
+    [data-theme="dark"] .moon-icon { color: var(--accent); }
+
+    main { max-width: 940px; margin: auto; padding: 12rem 2rem 4rem; }
+    
+    .view { 
+      display: none; 
+      opacity: 0; 
+      transform: translateY(20px); 
+      transition: opacity 0.5s ease, transform 0.5s ease; 
+    }
+    .view.active { display: block; opacity: 1; transform: translateY(0); }
+
+    .system-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(0, 0, 0, 0.05);
+      padding: 4px 12px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2rem;
+      border: 1px solid var(--panel-border);
+    }
+    [data-theme="dark"] .system-status { background: rgba(0, 0, 0, 0.2); }
+    
+    .pulse { width: 6px; height: 6px; background: var(--success); border-radius: 50%; animation: pulse-glow 2s infinite; }
+    @keyframes pulse-glow {
+      0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+
+    h1 { font-size: 3.2rem; line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -1.5px; }
+    h2 { font-size: 1.8rem; margin: 6rem 0 1.5rem; color: var(--accent); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; }
+    h3 { font-size: 1.3rem; margin-bottom: 0.8rem; font-weight: 600; }
+    h4 { font-size: 0.85rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; font-weight: 600; }
+
+    p { color: var(--muted); font-size: 1.1rem; margin-bottom: 1.5rem; }
+
+    .hero-contrast {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.95rem;
+        color: var(--accent);
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+        display: block;
+    }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+    .card { 
+      background: var(--panel); 
+      padding: 2.5rem; 
+      border-radius: 20px; 
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(10px);
+      transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card:hover { transform: translateY(-5px); border-color: var(--accent); }
+
+    ul { list-style: none; margin-bottom: 2rem; }
+    ul li { margin-bottom: 0.8rem; color: var(--muted); display: flex; align-items: flex-start; gap: 10px; font-size: 1rem; }
+    ul li::before { content: "→"; color: var(--accent); font-weight: bold; }
+
+    .service-block { margin-bottom: 4rem; padding-left: 1.5rem; border-left: 2px solid var(--panel-border); transition: 0.3s; }
+    .service-block:hover { border-left-color: var(--accent); }
+
+    .step-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 2rem; }
+    .step-num { color: var(--accent); font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; display: block; text-transform: uppercase; }
+
+    .model-viz {
+      margin: 6rem 0;
+      padding: 3rem;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .model-viz svg {
+      width: 100%;
+      height: auto;
+      max-width: 700px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .viz-disclaimer {
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+        opacity: 0.8;
+    }
+
+    .viz-caption {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn {
+      display: inline-block; padding: 1rem 2.2rem; border-radius: 8px;
+      font-weight: 600; text-decoration: none; cursor: pointer; transition: 0.3s;
+      border: none; font-size: 0.95rem;
+    }
+    .btn-primary { background: var(--accent); color: #ffffff; }
+    .btn-secondary { background: transparent; border: 1px solid var(--panel-border); color: var(--text); }
+    .btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .cta-box { 
+      background: var(--panel); 
+      padding: 4.5rem; 
+      border-radius: 24px; 
+      border: 1px solid var(--accent); 
+      text-align: center; 
+      backdrop-filter: blur(10px); 
+      margin: 6rem 0;
+    }
+
+    /* Form Styles */
+    .form-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 3rem;
+    }
+
+    .form-container { max-width: 700px; margin: 2rem auto; text-align: left; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 0.9rem; border-radius: 8px; border: 1px solid var(--panel-border);
+      background: var(--input-bg); color: var(--text); font-family: inherit; font-size: 1rem;
+      transition: 0.3s;
+      appearance: none;
+    }
+
+    .form-group textarea {
+      resize: vertical; /* Only resize vertically */
+      min-height: 100px;
+      max-height: 400px;
+    }
+
+    .form-group select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%239499b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+    }
+
+    .form-group select option { background-color: var(--bg); color: var(--text); }
+    [data-theme="dark"] .form-group select option { background-color: #161a35; }
+
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); outline: none; }
+
+    .field-hint {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 0.4rem;
+        line-height: 1.4;
+    }
+
+    .type-card-container { display: flex; gap: 1rem; margin-top: 0.5rem; }
+    .type-card {
+        flex: 1; padding: 1rem; border: 1px solid var(--panel-border); border-radius: 12px;
+        background: var(--input-bg); cursor: pointer; display: flex; align-items: center; justify-content: center;
+        gap: 10px; transition: 0.3s; font-weight: 500; color: var(--muted);
+    }
+    .type-card.active { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+    .type-card input { display: none; }
+    .hidden { display: none; }
+    
+    footer { 
+        text-align: center; 
+        padding: 6rem 2rem; 
+        color: var(--muted); 
+        font-size: 0.85rem; 
+        border-top: 1px solid var(--panel-border); 
+    }
+    .footer-trust {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--muted);
+        opacity: 0.7;
+        margin-top: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    @media (max-width: 850px) {
+      header { top: 0; width: 100%; border-radius: 0; padding-left: 1rem; }
+      .v-divider, .lang-selector { display: none; }
+      .step-grid, .form-row { grid-template-columns: 1fr; }
+      h1 { font-size: 2.5rem; }
+      .model-viz { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <img src="https://i.ibb.co/23Md2Hdx/logo.png" alt="Effibel" class="brand-logo">
+      <div class="v-divider"></div>
+      <div class="lang-selector">
+        <div class="lang-current" id="current-lang-display">EN</div>
+        <div class="lang-dropdown">
+          <div class="lang-option" onclick="setLang('EN')">English</div>
+          <div class="lang-option" onclick="setLang('ET')">Eesti</div>
+          <div class="lang-option" onclick="setLang('JA')">日本語</div>
+          <div class="lang-option" onclick="setLang('ES')">Español</div>
+        </div>
+      </div>
+    </div>
+    
+    <nav>
+      <button class="active" data-view="home" data-t="nav_home">Home</button>
+      <button data-view="services" data-t="nav_services">Services</button>
+      <button data-view="contact" data-t="nav_contact">Contact</button>
+    </nav>
+
+    <div class="theme-switch-wrapper">
+        <svg class="switch-icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle-input">
+          <span class="theme-slider"></span>
+        </label>
+        <svg class="switch-icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HOME VIEW -->
+  <section id="home" class="view active">
+    <div class="system-status">
+      <div class="pulse"></div>
+      <span data-t="system_status">ENV: PRODUCTION // MODE: RESEARCH-DRIVEN // NODES: VERIFIED</span>
+    </div>
+    <div class="hero">
+      <h4 data-t="hero_subtitle">Evaluation-First Data Studio</h4>
+      <h1 data-t="hero_title">Data that actually moves the needle</h1>
+      <span class="hero-contrast" data-t="hero_contrast">Annotation volume is easy. Model improvement is not.</span>
+      <p data-t="hero_p1">Blindly scaling annotation is the fastest way to waste budget. Effibel is a research-driven studio that helps AI teams identify model weaknesses <strong>before</strong> they start labelling. We focus on high-signal data that fixes specific failure modes.</p>
+      <p data-t="hero_p2">Our team is led by AI graduates and former engineers who treat data as a diagnostic problem. We ensure every label produced is necessary, accurate, and impactful.</p>
+      <button class="btn btn-primary" onclick="switchView('services')" data-t="btn_methodology">Our Methodology</button>
+    </div>
+
+    <h2 data-t="advantage_title">The Effibel Advantage</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3 data-t="adv1_h">Stop Wasting Annotation Budget</h3>
+        <p data-t="adv1_p">Most pipelines prioritize throughput over utility. We use evaluation metrics to prove which datasets are stagnant and which will drive performance. Our diagnostic approach ensures you only pay for data that your model hasn't mastered yet.</p>
+        <ul>
+            <li data-t="adv1_li1">Measured reduction in redundant labels</li>
+            <li data-t="adv1_li2">Focused improvements on validated failure categories</li>
+            <li data-t="adv1_li3">Transparent ROI tied to measurable error reduction</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 data-t="adv2_h">Expert-Verified Reviewers</h3>
+        <p data-t="adv2_p">Quality is a byproduct of competence. We don't use anonymous crowd-workers. Every reviewer in our network is verified for technical proficiency in STEM, Law, or Software Engineering.</p>
+        <ul>
+            <li data-t="adv2_li1">Audited reasoning traces and logic chains</li>
+            <li data-t="adv2_li2">Domain-specific nuance captured correctly</li>
+            <li data-t="adv2_li3">No generic or "hallucinated" human labels</li>
+        </ul>
+      </div>
+      <!-- New Card: Security Infrastructure -->
+      <div class="card">
+        <h3 data-t="adv3_h">Security-First Infrastructure</h3>
+        <p data-t="adv3_p">We treat your data as critical IP. We use proprietary, internal software hosted in isolated environments. We do not rely on third-party SaaS tools that might expose your data to public APIs or leaks.</p>
+        <ul>
+            <li data-t="adv3_li1">Isolated environments for maximum security</li>
+            <li data-t="adv3_li2">No third-party SaaS dependencies</li>
+            <li data-t="adv3_li3">Full audit logging of all data access</li>
+        </ul>
+      </div>
+      <!-- New Card: Human Vetting -->
+      <div class="card">
+        <h3 data-t="adv4_h">Rigorous Human Vetting</h3>
+        <p data-t="adv4_p">We don't mass-hire. Every single annotator undergoes a rigorous human interview and domain evaluation. This eliminates bot farms and low-effort scammers, ensuring you only pay for genuine human intelligence.</p>
+        <ul>
+            <li data-t="adv4_li1">Live video interviews for all workers</li>
+            <li data-t="adv4_li2">Identity verification to prevent fraud</li>
+            <li data-t="adv4_li3">Strict domain competency exams</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 6rem;" data-t="methodology_title">Methodology: The Diagnostic Loop</h2>
+    <p style="margin-bottom: 2rem; max-width: 800px;" data-t="methodology_intro">
+      Searching for model failures isn't a quick fix; it is an extensive, granular process. We perform deep-dive evaluations to map the exact boundaries of your model's capabilities, allowing us to build a data strategy rooted in empirical evidence rather than guesswork.
+    </p>
+
+    <div class="card-grid">
+      <div class="card">
+        <span class="step-num">01. <span data-t="step1_num_title">Failure Analysis</span></span>
+        <h3 data-t="step1_h">Stress-Test the Model</h3>
+        <p data-t="step1_p">We begin by auditing your current model checkpoints. We identify the "error surface"—the specific patterns, contexts, or logic steps where the model fails most consistently.</p>
+      </div>
+      <div class="card">
+        <span class="step-num">02. <span data-t="step2_num_title">Targeted Synthesis</span></span>
+        <h3 data-t="step2_h">High-Signal Remediation</h3>
+        <p data-t="step2_p">Instead of general data, we create "remedial" datasets designed specifically to counter the failure modes identified in Step 1. This is precision-guided data engineering.</p>
+      </div>
+      <div class="card">
+        <span class="step-num">03. <span data-t="step3_num_title">Impact Validation</span></span>
+        <h3 data-t="step3_h">Performance Auditing</h3>
+        <p data-t="step3_p">After annotation, we re-evaluate. We don't just deliver a .json file; we deliver a report showing how the new data shifted the model's error distribution.</p>
+      </div>
+    </div>
+    <p style="text-align: center; margin-top: 2rem; font-style: italic;" data-t="loop_footer">
+        This loop is repeatable across training iterations, allowing teams to progressively flatten the model’s error surface instead of chasing diminishing returns.
+    </p>
+
+    <!-- MODEL VIZ INTEGRATION -->
+    <div class="model-viz">
+      <div class="viz-disclaimer" data-t="viz_disclaimer">
+        Illustrative example based on internal evaluation methodology. Actual improvements depend on model architecture and task domain.
+      </div>
+      <svg viewBox="0 0 700 360" role="img" aria-label="Model error rate before and after targeted annotation">
+        <line x1="80" y1="40" x2="80" y2="300" stroke="var(--panel-border)" stroke-width="1" />
+        <line x1="80" y1="300" x2="660" y2="300" stroke="var(--panel-border)" stroke-width="1" />
+        <text x="70" y="170" fill="var(--muted)" font-size="10" text-anchor="middle" transform="rotate(-90 70,170)" font-family="'JetBrains Mono'" data-t="viz_y_axis">Error rate (%)</text>
+
+        <text x="80" y="325" fill="var(--muted)" font-size="12" text-anchor="middle" data-t="viz_cat1">Ambiguous</text>
+        <text x="200" y="325" fill="var(--muted)" font-size="12" text-anchor="middle" data-t="viz_cat2">Edge cases</text>
+        <text x="340" y="325" fill="var(--muted)" font-size="12" text-anchor="middle" data-t="viz_cat3">Long context</text>
+        <text x="500" y="325" fill="var(--muted)" font-size="12" text-anchor="middle" data-t="viz_cat4">Domain terms</text>
+
+        <polyline fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4" points="80,150 200,110 340,170 500,130" opacity="0.6" />
+        <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="80,210 200,180 340,220 500,190" />
+
+        <g fill="var(--muted)" opacity="0.6">
+          <circle cx="80" cy="150" r="3"/><circle cx="200" cy="110" r="3"/><circle cx="340" cy="170" r="3"/><circle cx="500" cy="130" r="3"/>
+        </g>
+        <g fill="var(--accent)">
+          <circle cx="80" cy="210" r="3"/><circle cx="200" cy="180" r="3"/><circle cx="340" cy="220" r="3"/><circle cx="500" cy="190" r="3"/>
+        </g>
+
+        <text x="520" y="60" fill="var(--muted)" font-size="11" font-family="'JetBrains Mono'" data-t="viz_legend_before">Before</text>
+        <line x1="480" y1="56" x2="510" y2="56" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3"/>
+        <text x="520" y="85" fill="var(--accent)" font-size="11" font-family="'JetBrains Mono'" font-weight="600" data-t="viz_legend_after">After targeted annotation</text>
+        <line x1="480" y1="81" x2="510" y2="81" stroke="var(--accent)" stroke-width="2.5"/>
+      </svg>
+      <p class="viz-caption" data-t="viz_caption">
+        Measured reduction in model error across key failure categories after evaluation-driven annotation.
+      </p>
+    </div>
+
+    <div class="cta-box">
+      <h3 data-t="cta_home_h">Efficiency is our baseline.</h3>
+      <p style="margin-bottom: 2rem;" data-t="cta_home_p">Don't spend more on data. Spend smarter.</p>
+      <button class="btn btn-primary" onclick="switchView('contact')" data-t="cta_home_btn">Get a Diagnostic Audit</button>
+    </div>
+  </section>
+
+  <!-- SERVICES VIEW -->
+  <section id="services" class="view">
+    <h4 data-t="services_subtitle">Our Ecosystem</h4>
+    <h1 data-t="services_title">Closing the gap between data and performance</h1>
+    <p data-t="services_intro">Effibel provides more than just rows in a database. We provide the intelligence required to make your training runs successful. By treating every annotation as a research artifact, we ensure your model learns what it needs, not what is easiest to label.</p>
+
+    <h2 data-t="capabilities_title">Core Capabilities</h2>
+    <div class="service-block">
+      <h3 data-t="cap1_h">Diagnostic Evaluation & Failure Mapping</h3>
+      <p data-t="cap1_p">We don't believe in "generic" quality. A model might be 99% accurate on benchmarks but fail on subtle 5-step logic chains or specific API call syntax. We map these specific vulnerabilities before recommending a data strategy.</p>
+      <ul>
+        <li data-t="cap1_li1">Red-teaming logic and reasoning capabilities</li>
+        <li data-t="cap1_li2">Analyzing distribution shifts in model responses</li>
+        <li data-t="cap1_li3">Detailed "Failure Surface" reports for engineering teams</li>
+      </ul>
+      <p><em data-t="cap1_outcome">Outcome: You gain a scientific understanding of your model's current limits, preventing wasted effort on areas where the model is already saturated.</em></p>
+    </div>
+
+    <div class="service-block">
+      <h3 data-t="cap2_h">Precision-Targeted Annotation</h3>
+      <p data-t="cap2_p">We specialize in complex, multi-modal, and reasoning-heavy data. Whether it's RLHF preference ranking or generating SFT traces for complex math, our data is designed to provide the highest possible training signal.</p>
+      <ul>
+        <li data-t="cap2_li1">Chain-of-Thought (CoT) trace generation and verification</li>
+        <li data-t="cap2_li2">Specialized STEM, Legal, and Medical reasoning</li>
+        <li data-t="cap2_li3">Precision robotics and spatial data annotation</li>
+      </ul>
+    </div>
+
+    <div class="service-block">
+      <h3 data-t="cap3_h">Strategic Data Synthesis</h3>
+      <p data-t="cap3_p">When high-quality human data is scarce, we use human-in-the-loop workflows to synthesize expert-level datasets. This approach is especially effective when real-world data is rare, expensive, or ethically constrained.</p>
+    </div>
+
+    <h2 data-t="op_model_title">Our Operational Model</h2>
+    <div class="step-grid">
+      <div class="step">
+        <span class="step-num">01. <span data-t="op_step1_label">Discovery</span></span>
+        <h3 data-t="op_step1_h">Technical Audit</h3>
+        <p data-t="op_step1_p">We verify your model's current performance and security needs. We sign comprehensive NDAs and establish secure data handling protocols.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">02. <span data-t="op_step2_label">Design</span></span>
+        <h3 data-t="op_step2_h">Workflow Architecture</h3>
+        <p data-t="op_step2_p">We build a custom annotation interface and rubric tailored specifically to the failure modes we've identified. No "one-size-fits-all" templates.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">03. <span data-t="op_step3_label">Production</span></span>
+        <h3 data-t="op_step3_h">Expert Annotation</h3>
+        <p data-t="op_step3_p">Our vetted specialists perform the work, guided by senior AI researchers who audit the output in real-time for logical consistency.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">04. <span data-t="op_step4_label">Delivery</span></span>
+        <h3 data-t="op_step4_h">Impact Report</h3>
+        <p data-t="op_step4_p">We deliver the data alongside a final evaluation, proving the effectiveness of the targeted labels and suggesting next steps for the next iteration.</p>
+      </div>
+    </div>
+
+    <div class="cta-box">
+      <h3 data-t="cta_services_h">Move beyond volume-based data.</h3>
+      <button class="btn btn-primary" onclick="switchView('contact')" data-t="cta_services_btn">Schedule a Consultation</button>
+    </div>
+  </section>
+
+  <!-- CONTACT VIEW -->
+  <section id="contact" class="view">
+    <div class="form-header">
+      <h4 data-t="contact_subtitle">Contact Us</h4>
+      <h1 data-t="contact_title">Start with an Evaluation</h1>
+      <p style="margin-bottom: 0.5rem;" data-t="contact_intro">Tell us about your model's current challenges. We'll help you optimize your strategy.</p>
+      <span style="font-size: 0.85rem; color: var(--accent); font-family: 'JetBrains Mono';" data-t="contact_time">Estimated completion: ~2 minutes</span>
+    </div>
+    
+    <div class="card form-container">
+      <form id="effibel-contact-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label data-t="label_fname">First Name</label>
+            <input type="text" name="first_name" id="first_name" data-t="ph_firstname" placeholder="Jane" required>
+          </div>
+          <div class="form-group">
+            <label data-t="label_lname">Last Name</label>
+            <input type="text" name="last_name" id="last_name" data-t="ph_lastname" placeholder="Doe" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label data-t="label_email">Professional Email</label>
+          <input type="email" name="email" id="email" data-t="ph_email" placeholder="jane@company.com" required>
+        </div>
+
+        <div class="form-group">
+          <label data-t="label_inquiry">Inquiry Type</label>
+          <div class="type-card-container">
+            <div class="type-card" id="card-individual">
+                <input type="radio" name="entity_type" value="individual">
+                <span data-t="type_individual">Individual / Researcher</span>
+            </div>
+            <div class="type-card active" id="card-company">
+                <input type="radio" name="entity_type" value="company" checked>
+                <span data-t="type_company">Organization / Company</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" id="company-field">
+          <label data-t="label_org_name">Organization Name</label>
+          <input type="text" name="company_name" id="company_name" data-t="ph_company" placeholder="Enter company name">
+        </div>
+
+        <div class="form-group">
+          <label data-t="label_domain">Primary Model Domain</label>
+          <select id="project-type" name="project_type" required>
+            <option value="" disabled selected data-t="select_placeholder">Select an option</option>
+            <option value="reasoning" data-t="domain1">Logical Reasoning / Math</option>
+            <option value="coding" data-t="domain2">Software Engineering / Code</option>
+            <option value="stem" data-t="domain3">STEM (Physics, Chemistry, etc.)</option>
+            <option value="multilingual" data-t="domain4">Multilingual / Low-Resource Langs</option>
+            <option value="audio" data-t="domain5">Audio / Speech-to-Text</option>
+            <option value="video" data-t="domain6">Video Understanding</option>
+            <option value="image" data-t="domain7">Computer Vision</option>
+            <option value="other" data-t="domain8">Other / Mixed Modality</option>
+          </select>
+        </div>
+
+        <div class="form-group hidden" id="other-project-field">
+          <label data-t="label_other_desc">Describe your specific data requirements</label>
+          <input type="text" name="other_description" id="other_description" data-t="ph_other_desc" placeholder="e.g. Legal document synthesis">
+        </div>
+
+        <div class="form-group">
+          <label data-t="label_interest">Interest Area</label>
+          <select id="service-needed" name="services" required>
+            <option value="" disabled selected data-t="select_placeholder">Select an option</option>
+            <option value="evaluation" data-t="interest1">Model Diagnostic & Evaluation</option>
+            <option value="labelling" data-t="interest2">Targeted Data Labelling</option>
+            <option value="both" data-t="interest3">End-to-End (Eval + Labelling)</option>
+            <option value="unsure" data-t="interest4">Unsure / Exploratory</option>
+          </select>
+        </div>
+
+        <!-- New Hidden Evaluation Scope Field -->
+        <div class="form-group hidden" id="evaluation-scope-field">
+          <label data-t="label_eval_scope">Evaluation Scope</label>
+          <select name="eval_scope" id="eval_scope">
+            <option value="" disabled selected data-t="select_placeholder">Select an option</option>
+            <option value="minimal" data-t="eval_scope_min">Minimal (greatest weakness)</option>
+            <option value="standard" data-t="eval_scope_std">Standard (extensive evaluation across dimensions)</option>
+            <option value="unsure" data-t="eval_scope_unsure">Not sure yet</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label data-t="label_batch">Estimated Batch Size</label>
+          <select name="project_scope" id="project_scope" required>
+            <option value="" disabled selected data-t="select_scale">Select scale</option>
+            <option value="small" data-t="scale1">Exploratory / Pilot (&lt;1k instances)</option>
+            <option value="medium" data-t="scale2">Standard Run (1k - 10k instances)</option>
+            <option value="large" data-t="scale3">Production Scale (10k+ instances)</option>
+            <option value="enterprise" data-t="scale4">Multi-batch / Ongoing partnership</option>
+            <option value="unsure" data-t="scale5">TBD based on evaluation</option>
+          </select>
+          <div class="field-hint" data-t="scale_hint">An “instance” refers to one labeled unit (e.g., prompt-response pair, image, clip, or segment).</div>
+        </div>
+
+        <div class="form-group">
+          <label data-t="label_context">Technical Context (Optional)</label>
+          <textarea rows="4" name="extra_info" id="extra_info" data-t="ph_context" placeholder="Tell us about the failure modes you're seeing or your specific performance targets."></textarea>
+        </div>
+
+        <p id="form-feedback" style="font-size: 0.85rem; margin-bottom: 1rem; display: none;"></p>
+
+        <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 2rem; line-height: 1.4;" data-t="contact_confidential">
+          Your technical context is treated as confidential. After submission, we review your context and match you with the most relevant Effibel expert for a follow-up discussion.
+        </p>
+
+        <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%;" data-t="contact_btn">Connect with an Expert</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span data-t="footer_text">Effibel — research-driven model evaluation & data strategy.</span>
+  <div class="footer-trust" data-t="footer_trust">Secure Workflows • NDA-First Engagements • Security-First Operations</div>
+  <br>
+  © 2026 Effibel. <span data-t="footer_copy">All rights reserved.</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<script>
+  // Translation Dictionary
+  const translations = {
+    EN: {
+      nav_home: "Home", nav_services: "Services", nav_contact: "Contact",
+      system_status: "ENV: PRODUCTION // MODE: RESEARCH-DRIVEN // NODES: VERIFIED",
+      hero_subtitle: "Evaluation-First Data Studio",
+      hero_title: "Data that actually moves the needle",
+      hero_contrast: "Annotation volume is easy. Model improvement is not.",
+      hero_p1: "Blindly scaling annotation is the fastest way to waste budget. Effibel is a research-driven studio that helps AI teams identify model weaknesses before they start labelling. We focus on high-signal data that fixes specific failure modes.",
+      hero_p2: "Our team is led by AI graduates and former engineers who treat data as a diagnostic problem. We ensure every label produced is necessary, accurate, and impactful.",
+      btn_methodology: "Our Methodology",
+      advantage_title: "The Effibel Advantage",
+      adv1_h: "Stop Wasting Annotation Budget",
+      adv1_p: "Most pipelines prioritize throughput over utility. We use evaluation metrics to prove which datasets are stagnant and which will drive performance.",
+      adv1_li1: "Measured reduction in redundant labels",
+      adv1_li2: "Focused improvements on validated failure categories",
+      adv1_li3: "Transparent ROI tied to measurable error reduction",
+      adv2_h: "Expert-Verified Reviewers",
+      adv2_p: "Quality is a byproduct of competence. We don't use anonymous crowd-workers. Every reviewer in our network is verified for technical proficiency.",
+      adv2_li1: "Audited reasoning traces and logic chains",
+      adv2_li2: "Domain-specific nuance captured correctly",
+      adv2_li3: "No generic or 'hallucinated' human labels",
+      // New: Security & Vetting
+      adv3_h: "Security-First Infrastructure",
+      adv3_p: "We treat your data as critical IP. We use proprietary, internal software hosted in isolated environments. We do not rely on third-party SaaS tools that might expose your data to public APIs or leaks.",
+      adv3_li1: "Isolated environments for maximum security",
+      adv3_li2: "No third-party SaaS dependencies",
+      adv3_li3: "Full audit logging of all data access",
+      adv4_h: "Rigorous Human Vetting",
+      adv4_p: "We don't mass-hire. Every single annotator undergoes a rigorous human interview and domain evaluation. This eliminates bot farms and low-effort scammers, ensuring you only pay for genuine human intelligence.",
+      adv4_li1: "Live video interviews for all workers",
+      adv4_li2: "Identity verification to prevent fraud",
+      adv4_li3: "Strict domain competency exams",
+
+      methodology_title: "Methodology: The Diagnostic Loop",
+      methodology_intro: "Searching for model failures isn't a quick fix; it is an extensive, granular process. We perform deep-dive evaluations to map the exact boundaries of your model's capabilities, allowing us to build a data strategy rooted in empirical evidence rather than guesswork.",
+      step1_num_title: "Failure Analysis", step1_h: "Stress-Test the Model", step1_p: "We begin by auditing your current model checkpoints. We identify the 'error surface' where the model fails most consistently.",
+      step2_num_title: "Targeted Synthesis", step2_h: "High-Signal Remediation", step2_p: "Instead of general data, we create 'remedial' datasets designed specifically to counter identified failure modes.",
+      step3_num_title: "Impact Validation", step3_h: "Performance Auditing", step3_p: "After annotation, we re-evaluate. We deliver a report showing how the new data shifted the model's error distribution.",
+      loop_footer: "This loop is repeatable across training iterations, allowing teams to progressively flatten the model’s error surface.",
+      viz_disclaimer: "Illustrative example based on internal evaluation methodology. Actual improvements depend on model architecture.",
+      viz_y_axis: "Error rate (%)", viz_cat1: "Ambiguous", viz_cat2: "Edge cases", viz_cat3: "Long context", viz_cat4: "Domain terms",
+      viz_legend_before: "Before", viz_legend_after: "After targeted annotation", viz_caption: "Measured reduction in model error across key failure categories after evaluation-driven annotation.",
+      cta_home_h: "Efficiency is our baseline.", cta_home_p: "Don't spend more on data. Spend smarter.", cta_home_btn: "Get a Diagnostic Audit",
+      services_subtitle: "Our Ecosystem", services_title: "Closing the gap between data and performance",
+      services_intro: "Effibel provides more than just rows in a database. We provide the intelligence required to make your training runs successful.",
+      capabilities_title: "Core Capabilities",
+      cap1_h: "Diagnostic Evaluation & Failure Mapping", cap1_p: "We don't believe in 'generic' quality. We map specific vulnerabilities before recommending a data strategy.",
+      cap1_li1: "Red-teaming logic and reasoning capabilities", cap1_li2: "Analyzing distribution shifts in model responses", cap1_li3: "Detailed 'Failure Surface' reports", cap1_outcome: "Outcome: Scientific understanding of model limits.",
+      cap2_h: "Precision-Targeted Annotation", cap2_p: "We specialize in complex, reasoning-heavy data designed to provide the highest training signal.",
+      cap2_li1: "CoT trace generation", cap2_li2: "STEM, Legal, Medical reasoning", cap2_li3: "Robotics and spatial data",
+      cap3_h: "Strategic Data Synthesis", cap3_p: "Using human-in-the-loop workflows to synthesize expert-level datasets for rare scenarios.",
+      op_model_title: "Our Operational Model", op_step1_label: "Discovery", op_step1_h: "Technical Audit", op_step1_p: "We verify model performance and security needs under NDA.",
+      op_step2_label: "Design", op_step2_h: "Workflow Architecture", op_step2_p: "Custom annotation interfaces tailored to specific failure modes.",
+      op_step3_label: "Production", op_step3_h: "Expert Annotation", op_step3_p: "Vetted specialists guided by senior AI researchers.",
+      op_step4_label: "Delivery", op_step4_h: "Impact Report", op_step4_p: "Data delivery with final evaluation and next steps.",
+      cta_services_h: "Move beyond volume-based data.", cta_services_btn: "Schedule a Consultation",
+      contact_subtitle: "Contact Us", contact_title: "Start with an Evaluation", contact_intro: "Tell us about your model's current challenges.", contact_time: "Estimated completion: ~2 minutes",
+      label_fname: "First Name", label_lname: "Last Name", label_email: "Professional Email", label_inquiry: "Inquiry Type",
+      type_individual: "Individual / Researcher", type_company: "Organization / Company", label_org_name: "Organization Name",
+      label_domain: "Primary Model Domain", select_placeholder: "Select an option", domain1: "Logical Reasoning / Math", domain2: "Software Engineering", domain3: "STEM", domain4: "Multilingual", domain5: "Audio", domain6: "Video", domain7: "Computer Vision", domain8: "Other",
+      label_interest: "Interest Area", interest1: "Model Diagnostic", interest2: "Targeted Labelling", interest3: "End-to-End", interest4: "Unsure",
+      label_batch: "Estimated Batch Size", select_scale: "Select scale", scale1: "Pilot (<1k)", scale2: "Standard (1k-10k)", scale3: "Production (10k+)", scale4: "Enterprise / Ongoing", scale5: "TBD", scale_hint: "An 'instance' refers to one labeled unit.",
+      label_context: "Technical Context (Optional)", contact_confidential: "Your context is treated as confidential.", contact_btn: "Connect with an Expert",
+      footer_text: "Effibel — research-driven model evaluation & data strategy.", footer_trust: "Secure Workflows • NDA-First • Security-First", footer_copy: "All rights reserved.",
+      // New & Placeholders
+      label_eval_scope: "Evaluation Scope",
+      eval_scope_min: "Minimal (greatest weakness)",
+      eval_scope_std: "Standard (extensive evaluation across dimensions)",
+      eval_scope_unsure: "Not sure yet",
+      label_other_desc: "Describe your specific data requirements",
+      ph_firstname: "Jane",
+      ph_lastname: "Doe",
+      ph_email: "jane@company.com",
+      ph_company: "Enter company name",
+      ph_other_desc: "e.g. Legal document synthesis",
+      ph_context: "Tell us about the failure modes you're seeing or your specific performance targets."
+    },
+    ET: {
+      nav_home: "Kodu", nav_services: "Teenused", nav_contact: "Kontakt",
+      system_status: "KESKKOND: TOODANG // REŽIIM: TEADUSPÕHINE // SÕLMED: KINNITATUD",
+      hero_subtitle: "Hindamisele keskendunud andmestuudio",
+      hero_title: "Andmed, mis päriselt muudavad tulemust",
+      hero_contrast: "Andmete märkimine on lihtne. Mudeli parandamine mitte.",
+      hero_p1: "Pime andmete märkimise skaleerimine on kiireim viis eelarve raiskamiseks. Effibel on teaduspõhine stuudio, mis aitab AI tiimidel tuvastada mudeli nõrkusi enne märkimise alustamist.",
+      hero_p2: "Meie tiimi juhivad AI eksperdid ja insenerid, kes käsitlevad andmeid diagnostilise probleemina. Me tagame, et iga märgend on vajalik ja täpne.",
+      btn_methodology: "Meie metoodika",
+      advantage_title: "Effibeli eelis",
+      adv1_h: "Lõpeta andmemärkimise eelarve raiskamine",
+      adv1_p: "Enamik konveiereid eelistab läbilaskevõimet kasulikkusele. Me kasutame mõõdikuid, et tõestada, millised andmed päriselt tulemust parandavad.",
+      adv1_li1: "Ülearuste märgendite vähendamine",
+      adv1_li2: "Fookus kinnitatud veakategooriate parandamisele",
+      adv1_li3: "Läbipaistev ROI tänu mõõdetavale veamäära langusele",
+      adv2_h: "Ekspertide poolt kinnitatud kontrollijad",
+      adv2_p: "Kvaliteet on kompetentsi tulemus. Me ei kasuta anonüümseid töölisi, vaid kontrollitud tehnilise taustaga eksperte.",
+      adv2_li1: "Auditeeritud loogika- ja mõtteahelad",
+      adv2_li2: "Valdkonnaspetsiifiliste nüansside täpne tabamine",
+      adv2_li3: "Puuduvad hallutsinatsioonid või suvalised märgendid",
+      // New: Security & Vetting (Estonian)
+      adv3_h: "Turvalisus ennekõike",
+      adv3_p: "Käsitleme teie andmeid kriitilise varana. Kasutame eraldatud keskkondades asuvat sisemist tarkvara. Me ei sõltu kolmanda osapoole SaaS-tööriistadest, mis võivad põhjustada lekkeid.",
+      adv3_li1: "Eraldatud keskkonnad maksimaalse turvalisuse tagamiseks",
+      adv3_li2: "Puuduvad kolmanda osapoole SaaS sõltuvused",
+      adv3_li3: "Täielik andmetele juurdepääsu logimine",
+      adv4_h: "Range inimkontroll",
+      adv4_p: "Ei mingit massvärbamist. Iga töötaja läbib range inimintervjuu ja valdkonna eksami. Välistame petturid, et tagada kapitali efektiivsus.",
+      adv4_li1: "Videointervjuud kõigi töötajatega",
+      adv4_li2: "Isikusamasuse kontroll pettuste vältimiseks",
+      adv4_li3: "Range valdkonna pädevuse kontroll",
+
+      methodology_title: "Metoodika: Diagnostiline tsükkel",
+      methodology_intro: "Mudeli diagnostika ei ole kiire ülevaatus; see on põhjalik protsess. Kaardistame täpsed veapiirid, et ehitada strateegia valideeritud teadmistele.",
+      step1_num_title: "Veaanalüüs", step1_h: "Mudeli stressitestimine", step1_p: "Alustame mudeli auditeerimisega, et tuvastada 'veapind' – mustrid, kus mudel kõige rohkem eksib.",
+      step2_num_title: "Suunatud süntees", step2_h: "Kõrge signaaliga parandamine", step2_p: "Üldiste andmete asemel loome andmestikke, mis on disainitud spetsiaalselt tuvastatud vigade parandamiseks.",
+      step3_num_title: "Mõju kinnitamine", step3_h: "Tulemuslikkuse audit", step3_p: "Pärast märkimist hindame mudelit uuesti ja esitame raporti andmete mõju kohta.",
+      loop_footer: "See tsükkel on korratav, võimaldades tiimidel järk-järgult vähendada mudeli veamäära.",
+      viz_disclaimer: "Illustratiivne näide sisehinnangu põhjal. Tegelik parandustöö sõltub mudeli arhitektuurist.",
+      viz_y_axis: "Veamäär (%)", viz_cat1: "Segane", viz_cat2: "Äärejuhud", viz_cat3: "Pikk kontekst", viz_cat4: "Valdkonna terminid",
+      viz_legend_before: "Enne", viz_legend_after: "Pärast suunatud märkimist", viz_caption: "Mudeli veamäära langus võtmekategooriates pärast hindamispõhist andmemärkimist.",
+      cta_home_h: "Efektiivsus on meie standard.", cta_home_p: "Ära kuluta andmetele rohkem. Kuluta targemalt.", cta_home_btn: "Telli diagnostiline audit",
+      services_subtitle: "Meie ökosüsteem", services_title: "Andmete ja tulemuslikkuse vahelise lõhe sulgemine",
+      services_intro: "Effibel pakub enamat kui lihtsalt andmeridu. Pakume intelligentsust, mis on vajalik edukaks mudeli treenimiseks.",
+      capabilities_title: "Põhivõimekused",
+      cap1_h: "Diagnostiline hindamine ja vigade kaardistamine", cap1_p: "Me ei usu 'üldisesse' kvaliteeti. Kaardistame haavatavused enne andmestrateegia loomist.",
+      cap1_li1: "Loogika ja arutlusvõime testimine", cap1_li2: "Mudeli vastuste jaotuse muutuse analüüs", cap1_li3: "Detailsed 'veapinna' raportid inseneridele", cap1_outcome: "Tulemus: Teaduslik arusaam mudeli piiridest.",
+      cap2_h: "Täpselt suunatud andmemärkimine", cap2_p: "Oleme spetsialiseerunud keerulistele ja arutlust nõudvatele andmetele (RLHF, SFT).",
+      cap2_li1: "Mõtteahelate (CoT) loomine", cap2_li2: "STEM, õigusabi ja meditsiiniline arutlus", cap2_li3: "Robootika ja ruumiliste andmete märkimine",
+      cap3_h: "Strateegiline andmete süntees", cap3_p: "Inimene-tsüklis töövoogude kasutamine eksperttasemel andmete loomiseks haruldastes olukordades.",
+      op_model_title: "Operatiivne mudel", op_step1_label: "Avastamine", op_step1_h: "Tehniline audit", op_step1_p: "Kinnitame mudeli soorituse ja turvavajadused konfidentsiaalsuslepingu alusel.",
+      op_step2_label: "Disain", op_step2_h: "Töövoo arhitektuur", op_step2_p: "Kohandatud märkimisliidesed vastavalt mudeli nõrkustele.",
+      op_step3_label: "Tootmine", op_step3_h: "Eksperttasemel märkimine", op_step3_p: "Kontrollitud spetsialistid ja AI teadlaste järelevalve.",
+      op_step4_label: "Tarnimine", op_step4_h: "Mõjuraport", op_step4_p: "Andmete tarnimine koos lõpliku analüüsi ja edasiste sammudega.",
+      cta_services_h: "Liigu mahupõhiselt märkimiselt kvaliteedile.", cta_services_btn: "Broneeri konsultatsioon",
+      contact_subtitle: "Võta ühendust", contact_title: "Alusta hindamisest", contact_intro: "Räägi meile oma mudeli praegustest väljakutsetest.", contact_time: "Hinnatav aeg: ~2 minutit",
+      label_fname: "Eesnimi", label_lname: "Perekonnanimi", label_email: "Töömeil", label_inquiry: "Päringu tüüp",
+      type_individual: "Üksikisik / Teadlane", type_company: "Organisatsioon / Ettevõte", label_org_name: "Ettevõtte nimi",
+      label_domain: "Mudeli valdkond", select_placeholder: "Vali variant", domain1: "Loogika / Matemaatika", domain2: "Tarkvaraarendus", domain3: "STEM", domain4: "Mitmekeelne", domain5: "Audio", domain6: "Video", domain7: "Arvutinägemine", domain8: "Muu",
+      label_interest: "Huvipakkuv valdkond", interest1: "Mudeli diagnostika", interest2: "Suunatud märkimine", interest3: "Terviklahendus", interest4: "Pole kindel",
+      label_batch: "Andmemaht", select_scale: "Vali skaala", scale1: "Pilootprojekt (<1k)", scale2: "Standard (1k-10k)", scale3: "Tootmisskaala (10k+)", scale4: "Pikaajaline koostöö", scale5: "Selgub hindamise käigus", scale_hint: "Ühik tähistab ühte märgendatud kirjet.",
+      label_context: "Tehniline kontekst (vabatahtlik)", contact_confidential: "Kogu info on konfidentsiaalne.", contact_btn: "Võta eksperdiga ühendust",
+      footer_text: "Effibel — teaduspõhine mudeli hindamine ja andmestrateegia.", footer_trust: "Turvalised töövood • NDA • Turvalisus fookuses", footer_copy: "Kõik õigused kaitstud.",
+      // New & Placeholders
+      label_eval_scope: "Hindamise ulatus",
+      eval_scope_min: "Minimaalne (suurimad nõrkused)",
+      eval_scope_std: "Standardne (põhjalik hindamine)",
+      eval_scope_unsure: "Pole veel kindel",
+      label_other_desc: "Kirjelda oma spetsiifilisi nõudeid",
+      ph_firstname: "Mari",
+      ph_lastname: "Tamm",
+      ph_email: "mari@ettevote.ee",
+      ph_company: "Sisesta ettevõtte nimi",
+      ph_other_desc: "nt. Õigusdokumentide süntees",
+      ph_context: "Räägi meile ebaõnnestumistest, mida näete, või oma konkreetsetest toimivuseesmärkidest."
+    },
+    JA: {
+      nav_home: "ホーム", nav_services: "サービス", nav_contact: "お問い合わせ",
+      system_status: "環境：プロダクション // モード：リサーチ主導 // ノード：検証済み",
+      hero_subtitle: "評価ファーストのデータスタジオ",
+      hero_title: "真にパフォーマンスを向上させるデータ",
+      hero_contrast: "アノテーションの「量」は簡単ですが、「モデルの改善」は容易ではありません。",
+      hero_p1: "無計画なアノテーションの拡大は予算の無駄です。Effibelは、ラベル付けを開始する「前」にモデルの弱点を特定するリサーチ主導のスタジオです。",
+      hero_p2: "AI専門家と元エンジニアがデータを診断課題として捉え、すべてのラベルが必要かつ正確であることを保証します。",
+      btn_methodology: "私たちの手法",
+      advantage_title: "Effibelの強み",
+      adv1_h: "アノテーション予算の浪費を止める",
+      adv1_p: "多くのパイプラインは実用性よりも処理量を優先します。私たちは評価指標を使用して、どのデータがモデルの性能を向上させるかを証明します。",
+      adv1_li1: "冗長なラベルの削減を測定",
+      adv1_li2: "検証されたエラーカテゴリへの集中改善",
+      adv1_li3: "測定可能なエラー削減に紐付いた透明性の高いROI",
+      adv2_h: "専門家による検証済みレビュアー",
+      adv2_p: "品質は能力の副産物です。匿名ワーカーは使用せず、STEM、法務、ソフトウェアエンジニアリングの専門家のみを採用しています。",
+      adv2_li1: "監査済みの推論トレースとロジックチェーン",
+      adv2_li2: "ドメイン固有のニュアンスを正確に把握",
+      adv2_li3: "汎用的または「幻覚」のない人間によるラベル",
+      // New: Security & Vetting (Japanese)
+      adv3_h: "セキュリティ第一のインフラ",
+      adv3_p: "データは重要な知的財産です。隔離された環境で独自の内部ソフトウェアを使用し、公共APIや漏洩のリスクがあるサードパーティ製SaaSツールには依存しません。",
+      adv3_li1: "最大限のセキュリティを確保する隔離環境",
+      adv3_li2: "サードパーティSaaSへの依存なし",
+      adv3_li3: "全データアクセスの完全な監査ログ",
+      adv4_h: "厳格な人間による審査",
+      adv4_p: "大量採用はしません。すべての作業者は、厳格な人間による面接とドメイン評価に合格しています。ボットや詐欺を排除し、真の人間の知性のみを提供します。",
+      adv4_li1: "全作業者に対するライブビデオ面接",
+      adv4_li2: "不正を防ぐための身元確認",
+      adv4_li3: "厳格なドメイン能力試験",
+
+      methodology_title: "手法：診断ループ",
+      methodology_intro: "モデル診断は簡単なスキャンではありません。詳細なプロセスを経て失敗の境界を正確にマッピングし、検証された知識に基づいてデータ戦略を構築します。",
+      step1_num_title: "失敗分析", step1_h: "モデルのストレステスト", step1_p: "現在のモデルを監査し、モデルが最も一貫して失敗する「エラーサーフェス」を特定します。",
+      step2_num_title: "ターゲット合成", step2_h: "高シグナルの改善", step2_p: "一般的なデータではなく、特定された失敗モードに対抗するために設計されたデータセットを作成します。",
+      step3_num_title: "影響の検証", step3_h: "パフォーマンス監査", step3_p: "アノテーション後、再評価を行い、新しいデータがエラー分布をどう変えたかを報告します。",
+      loop_footer: "このループは繰り返し可能で、モデルのエラーを段階的に最小化します。",
+      viz_disclaimer: "内部評価に基づいた例。実際の改善はアーキテクチャに依存します。",
+      viz_y_axis: "エラー率 (%)", viz_cat1: "曖昧性", viz_cat2: "エッジケース", viz_cat3: "長いコンテキスト", viz_cat4: "専門用語",
+      viz_legend_before: "改善前", viz_legend_after: "ターゲットアノテーション後", viz_caption: "評価主導のアノテーションによる主要カテゴリでのエラー削減効果。",
+      cta_home_h: "効率は私たちの基準です。", cta_home_p: "データに多くを費やすのではなく、賢く使いましょう。", cta_home_btn: "診断監査を受ける",
+      services_subtitle: "エコシステム", services_title: "データと性能のギャップを埋める",
+      services_intro: "単なるデータベースの行ではなく、トレーニングを成功させるためのインテリジェンスを提供します。",
+      capabilities_title: "主な機能",
+      cap1_h: "診断評価と失敗マッピング", cap1_p: "データ戦略を推奨する前に、モデルの脆弱性を詳細にマッピングします。",
+      cap1_li1: "論理・推論能力のレッドチーミング", cap1_li2: "モデル応答の分布シフト分析", cap1_li3: "エンジニア向け詳細報告書", cap1_outcome: "成果：モデルの限界を科学的に理解。",
+      cap2_h: "高精度ターゲットアノテーション", cap2_p: "複雑で推論重視のデータ（RLHF、SFT）を専門としています。",
+      cap2_li1: "思考の連鎖 (CoT) の生成と検証", cap2_li2: "STEM、法務、医療推論", cap2_li3: "精密ロボティクスと空間データ",
+      cap3_h: "戦略的データ合成", cap3_p: "ヒューマン・イン・ザ・ループによる専門家レベルのデータ合成。",
+      op_model_title: "運用モデル", op_step1_label: "発見", op_step1_h: "テクニカル監査", op_step1_p: "機密保持契約下での性能とセキュリティの確認。",
+      op_step2_label: "設計", op_step2_h: "ワークフロー構築", op_step2_p: "失敗モードに特化したカスタムアノテーションインターフェース。",
+      op_step3_label: "生産", op_step3_h: "専門家アノテーション", op_step3_p: "AI研究者によるリアルタイム監査を伴う専門家作業。",
+      op_step4_label: "納品", op_step4_h: "インパクトレポート", op_step4_p: "評価報告を伴うデータの納品。",
+      cta_services_h: "量から質への転換を。", cta_services_btn: "コンサルテーションを予約",
+      contact_subtitle: "お問い合わせ", contact_title: "評価から始めましょう", contact_intro: "モデルの現在の課題をお聞かせください。", contact_time: "所要時間：約2分",
+      label_fname: "名", label_lname: "姓", label_email: "仕事用メール", label_inquiry: "お問い合わせ種別",
+      type_individual: "個人 / 研究者", type_company: "組織 / 企業", label_org_name: "組織名",
+      label_domain: "モデルドメイン", select_placeholder: "選択してください", domain1: "論理推論 / 数学", domain2: "ソフトウェア開発", domain3: "STEM", domain4: "多言語", domain5: "音声", domain6: "動画", domain7: "画像認識", domain8: "その他",
+      label_interest: "興味のある分野", interest1: "モデル診断・評価", interest2: "アノテーション", interest3: "エンドツーエンド", interest4: "未定",
+      label_batch: "予定データ規模", select_scale: "規模を選択", scale1: "パイロット (<1k)", scale2: "標準 (1k-10k)", scale3: "プロダクション (10k+)", scale4: "継続的パートナーシップ", scale5: "評価後に決定", scale_hint: "「インスタンス」は、1つのラベル付き単位を指します。",
+      label_context: "技術的コンテキスト (任意)", contact_confidential: "情報は厳重に管理されます。", contact_btn: "エキスパートと相談する",
+      footer_text: "Effibel — リサーチ主導のモデル評価とデータ戦略", footer_trust: "セキュアなワークフロー • NDA徹底 • セキュリティ重視", footer_copy: "All rights reserved.",
+      // New & Placeholders
+      label_eval_scope: "評価の範囲",
+      eval_scope_min: "最小（最大の弱点）",
+      eval_scope_std: "標準（多角的な詳細評価）",
+      eval_scope_unsure: "未定",
+      label_other_desc: "具体的なデータ要件を記述",
+      ph_firstname: "花子",
+      ph_lastname: "山田",
+      ph_email: "hanako@kaisha.co.jp",
+      ph_company: "会社名を入力",
+      ph_other_desc: "例：法的文書の合成",
+      ph_context: "現在発生している失敗モードや、具体的なパフォーマンス目標について教えてください。"
+    },
+    ES: {
+      nav_home: "Inicio", nav_services: "Servicios", nav_contact: "Contacto",
+      system_status: "ENV: PRODUCCIÓN // MODO: INVESTIGACIÓN // NODOS: VERIFICADOS",
+      hero_subtitle: "Estudio de Datos Centrado en la Evaluación",
+      hero_title: "Datos que realmente marcan la diferencia",
+      hero_contrast: "El volumen de anotaciones es fácil. Mejorar el modelo no.",
+      hero_p1: "Escalar la anotación a ciegas es la forma más rápida de desperdiciar presupuesto. Effibel identifica las debilidades del modelo antes de empezar a etiquetar.",
+      hero_p2: "Nuestro equipo está liderado por expertos en IA que tratan los datos como un problema de diagnóstico para asegurar que cada etiqueta sea necesaria.",
+      btn_methodology: "Nuestra Metodología",
+      advantage_title: "La Ventaja de Effibel",
+      adv1_h: "Deje de desperdiciar presupuesto",
+      adv1_p: "La mayoría de los procesos priorizan la cantidad sobre la utilidad. Usamos métricas para probar qué datos impulsarán el rendimiento.",
+      adv1_li1: "Reducción medida de etiquetas redundantes",
+      adv1_li2: "Mejoras enfocadas en categorías de error validadas",
+      adv1_li3: "ROI transparente vinculado a la reducción de errores",
+      adv2_h: "Revisores Expertos Verificados",
+      adv2_p: "La calidad es un subproducto de la competencia. No usamos trabajadores anónimos, sino expertos en STEM, Derecho o Ingeniería.",
+      adv2_li1: "Trazas de razonamiento auditadas",
+      adv2_li2: "Matices específicos del dominio capturados correctamente",
+      adv2_li3: "Sin etiquetas humanas genéricas o 'alucinadas'",
+      // New: Security & Vetting (Spanish)
+      adv3_h: "Infraestructura de Seguridad Primero",
+      adv3_p: "Tratamos sus datos como propiedad intelectual crítica. Usamos software interno propietario en entornos aislados. No dependemos de herramientas SaaS de terceros que puedan exponer sus datos.",
+      adv3_li1: "Entornos aislados para máxima seguridad",
+      adv3_li2: "Sin dependencias de SaaS de terceros",
+      adv3_li3: "Registro de auditoría completo de acceso",
+      adv4_h: "Verificación Humana Rigurosa",
+      adv4_p: "Sin contrataciones masivas. Cada anotador pasa una entrevista humana rigurosa y una evaluación de dominio. Eliminamos granjas de bots y estafadores, asegurando inteligencia humana genuina.",
+      adv4_li1: "Entrevistas de video en vivo para todos",
+      adv4_li2: "Verificación de identidad para prevenir fraude",
+      adv4_li3: "Exámenes estrictos de competencia",
+
+      methodology_title: "Metoodología: El Ciclo de Diagnóstico",
+      methodology_intro: "El diagnóstico de modelos no es un escaneo rápido; es un proceso extenso y granular. Realizamos evaluaciones profundas para mapear los límites exactos de las capacidades de su modelo, construyendo una estrategia basada en evidencia.",
+      step1_num_title: "Análisis de Fallos", step1_h: "Stress-Test del Modelo", step1_p: "Auditamos sus modelos actuales para identificar la 'superficie de error' donde fallan con más frecuencia.",
+      step2_num_title: "Síntesis Dirigida", step2_h: "Remediación de Alta Señal", step2_p: "Creamos conjuntos de datos diseñados específicamente para contrarrestar los fallos identificados.",
+      step3_num_title: "Validación de Impacto", step3_h: "Auditoría de Rendimiento", step3_p: "Tras la anotación, evaluamos cómo los nuevos datos han cambiado la distribución de errores.",
+      loop_footer: "Este ciclo es repetible, permitiendo a los equipos reducir progresivamente los errores del modelo.",
+      viz_disclaimer: "Ejemplo ilustrativo. Las mejoras reales dependen de la arquitectura del modelo.",
+      viz_y_axis: "Tasa de error (%)", viz_cat1: "Ambiguo", viz_cat2: "Casos límite", viz_cat3: "Contexto largo", viz_cat4: "Términos de dominio",
+      viz_legend_before: "Antes", viz_legend_after: "Después de anotación dirigida", viz_caption: "Reducción medida del error tras la anotación impulsada por la evaluación.",
+      cta_home_h: "La eficiencia es nuestra base.", cta_home_p: "No gaste más en datos. Gaste mejor.", cta_home_btn: "Obtener Auditoría Diagnóstica",
+      services_subtitle: "Nuestro Ecosistema", services_title: "Cerrando la brecha entre datos y rendimiento",
+      services_intro: "Effibel proporciona la inteligencia necesaria para que sus entrenamientos sean exitosos.",
+      capabilities_title: "Capacidades Principales",
+      cap1_h: "Evaluación Diagnóstica y Mapeo de Fallos", cap1_p: "Mapeamos vulnerabilidades específicas antes de recomendar una estrategia de datos.",
+      cap1_li1: "Red-teaming de capacidades de razonamiento", cap1_li2: "Análisis de cambios en la distribución de respuestas", cap1_li3: "Informes detallados para equipos de ingeniería", cap1_outcome: "Resultado: Comprensión científica de los límites del modelo.",
+      cap2_h: "Anotación de Alta Precisión", cap2_p: "Especializados en datos complejos y de razonamiento crítico (RLHF, SFT).",
+      cap2_li1: "Generación de trazas de pensamiento (CoT)", cap2_li2: "Razonamiento STEM, Legal y Médico", cap2_li3: "Datos espaciales y de robótica",
+      cap3_h: "Síntesis Estratégica de Datos", cap3_p: "Uso de flujos de trabajo expertos para sintetizar datos en escenarios raros.",
+      op_model_title: "Modelo Operativo", op_step1_label: "Descubrimiento", op_step1_h: "Auditoría Técnica", op_step1_p: "Verificación de rendimiento y seguridad bajo NDA.",
+      op_step2_label: "Diseño", op_step2_h: "Arquitectura de Flujo", op_step2_p: "Interfaces personalizadas para fallos específicos.",
+      op_step3_label: "Producción", op_step3_h: "Anotación Experta", op_step3_p: "Especialistas auditados por investigadores de IA senior.",
+      op_step4_label: "Entrega", op_step4_h: "Informe de Impacto", op_step4_p: "Entrega de datos con evaluación final y próximos pasos.",
+      cta_services_h: "Vaya más allá del volumen.", cta_services_btn: "Programar Consulta",
+      contact_subtitle: "Contacto", contact_title: "Empiece con una Evaluación", contact_intro: "Cuéntenos sobre sus desafíos actuales.", contact_time: "Tiempo estimado: ~2 minutos",
+      label_fname: "Nombre", label_lname: "Apellido", label_email: "Email Profesional", label_inquiry: "Tipo de Consulta",
+      type_individual: "Individual / Investigador", type_company: "Organización / Empresa", label_org_name: "Nombre de la Organización",
+      label_domain: "Dominio del Modelo", select_placeholder: "Seleccione una opción", domain1: "Razonamiento / Mate", domain2: "Ingeniería de Software", domain3: "STEM", domain4: "Multilingüe", domain5: "Audio", domain6: "Video", domain7: "Visión Artificial", domain8: "Otro",
+      label_interest: "Área de Interés", interest1: "Diagnóstico de Modelo", interest2: "Anotación Dirigida", interest3: "Fin a Fin", interest4: "No estoy seguro",
+      label_batch: "Tamaño Estimado", select_scale: "Seleccione escala", scale1: "Piloto (<1k)", scale2: "Estándar (1k-10k)", scale3: "Producción (10k+)", scale4: "Continuo", scale5: "TBD", scale_hint: "Una 'instancia' es una unidad etiquetada.",
+      label_context: "Contexto Técnico (Opcional)", contact_confidential: "Su contexto es confidencial.", contact_btn: "Conectar con un Experto",
+      footer_text: "Effibel — evaluación de modelos y estrategia de datos.", footer_trust: "Flujos Seguros • NDA Primero • Seguridad Primero", footer_copy: "Todos los derechos reservados.",
+      // New & Placeholders
+      label_eval_scope: "Alcance de la Evaluación",
+      eval_scope_min: "Mínimo (mayor debilidad)",
+      eval_scope_std: "Estándar (evaluación extensa)",
+      eval_scope_unsure: "No estoy seguro",
+      label_other_desc: "Describa sus requisitos de datos",
+      ph_firstname: "María",
+      ph_lastname: "García",
+      ph_email: "maria@empresa.com",
+      ph_company: "Nombre de la empresa",
+      ph_other_desc: "ej. Síntesis de documentos legales",
+      ph_context: "Cuéntenos sobre los modos de falla que está viendo o sus objetivos de rendimiento específicos."
+    }
+  };
+
+  function setLang(code) {
+    // Update the display code in the header
+    document.getElementById('current-lang-display').innerText = code;
+    
+    // Apply translations to all elements with data-t attribute
+    const elements = document.querySelectorAll('[data-t]');
+    elements.forEach(el => {
+      const key = el.getAttribute('data-t');
+      if (translations[code] && translations[code][key]) {
+        // Handle input placeholders and option text differently
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+          el.placeholder = translations[code][key];
+        } else {
+          // Use textContent for broader compatibility (including SVG)
+          el.textContent = translations[code][key];
+        }
+      }
+    });
+  }
+
+  // View Switching Logic
+  const navButtons = document.querySelectorAll('nav button');
+  const views = document.querySelectorAll('.view');
+
+  function switchView(viewId) {
+    views.forEach(v => {
+      v.classList.remove('active');
+      v.style.display = 'none';
+      v.style.opacity = '0';
+      v.style.transform = 'translateY(20px)';
+    });
+
+    const nextView = document.getElementById(viewId);
+    if (!nextView) return;
+    
+    nextView.style.display = 'block';
+    
+    navButtons.forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`[data-view="${viewId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    setTimeout(() => {
+      nextView.classList.add('active');
+      nextView.style.opacity = '1';
+      nextView.style.transform = 'translateY(0)';
+    }, 50);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+
+  // Theme Toggle Logic
+  const themeToggle = document.getElementById('theme-toggle-input');
+  themeToggle.addEventListener('change', () => {
+    const theme = themeToggle.checked ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', theme);
+  });
+
+  // Form Logic - Project Type
+  const projectType = document.getElementById('project-type');
+  const otherField = document.getElementById('other-project-field');
+  projectType.addEventListener('change', (e) => {
+    if (e.target.value === 'other') {
+      otherField.classList.remove('hidden');
+    } else {
+      otherField.classList.add('hidden');
+    }
+  });
+
+  // Form Logic - Service Needed (New Requirement)
+  const serviceNeeded = document.getElementById('service-needed');
+  const evalScopeField = document.getElementById('evaluation-scope-field');
+  
+  serviceNeeded.addEventListener('change', (e) => {
+    const val = e.target.value;
+    // Show evaluation scope if 'evaluation' or 'both' is selected
+    if (val === 'evaluation' || val === 'both') {
+      evalScopeField.classList.remove('hidden');
+      document.getElementById('eval_scope').required = true;
+    } else {
+      evalScopeField.classList.add('hidden');
+      document.getElementById('eval_scope').required = false;
+    }
+  });
+
+  const typeCards = document.querySelectorAll('.type-card');
+  const companyField = document.getElementById('company-field');
+  typeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      typeCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const radio = card.querySelector('input');
+      radio.checked = true;
+      if (radio.value === 'company') {
+        companyField.classList.remove('hidden');
+      } else {
+        companyField.classList.add('hidden');
+      }
+    });
+  });
+
+  // Initialize with English
+  window.onload = () => {
+    setLang('EN');
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+  // -------------------------
+  // EmailJS Init
+  // -------------------------
+  (function () {
+    emailjs.init("irk1mm5vAEAd7YVxq");
+  })();
+
+  // -------------------------
+  // Language Resolution
+  // -------------------------
+  function getCurrentLanguage() {
+    const langSelect = document.getElementById('language');
+    if (langSelect && langSelect.value) return langSelect.value;
+
+    if (document.documentElement.lang)
+      return document.documentElement.lang;
+
+    return 'en';
+  }
+
+  // -------------------------
+  // Localized UI Strings
+  // -------------------------
+  const UI_TEXT = {
+    en: { sending: 'Sending…', sent: 'Inquiry sent ✓', error: 'Send failed' },
+    et: { sending: 'Saatmine…', sent: 'Päring saadetud ✓', error: 'Saatmine ebaõnnestus' },
+    ja: { sending: '送信中…', sent: '送信完了 ✓', error: '送信失敗' },
+    es: { sending: 'Enviando…', sent: 'Enviado ✓', error: 'Error al enviar' }
+  };
+
+  // -------------------------
+  // Localized Email Content
+  // -------------------------
+  const EMAIL_COPY = {
+    en: {
+      admin: (d, isCompany) => `
+        <h2 style="color:#0066FF;">New Inquiry Received</h2>
+        <p><strong>Name:</strong> ${d.first_name} ${d.last_name}</p>
+        <p><strong>Email:</strong> ${d.email}</p>
+        <p><strong>Entity:</strong> ${
+          isCompany ? `Company — ${d.company_name || 'Not provided'}` : 'Individual'
+        }</p>
+        <p><strong>Services:</strong> ${d.services}</p>
+        <p><strong>Project Type:</strong> ${d.project_type}</p>
+        <p><strong>Project Scope:</strong> ${d.project_scope}</p>
+        <p><strong>Evaluation Scope:</strong> ${d.eval_scope || 'None'}</p>
+        <p><strong>Additional Details:</strong><br>
+        ${d.extra_info || 'No extra info provided.'}</p>
+      `,
+      client: (d) => `
+        <p>Hi ${d.first_name},</p>
+        <p>
+          Thank you for reaching out to <strong>Effibel</strong>.
+          We’ve received your inquiry regarding
+          <strong>${d.project_type}</strong>.
+        </p>
+        <p>
+          Our team is reviewing your request and will respond within
+          <strong>24–48 hours</strong>.
+        </p>
+        <p>
+          Best regards,<br>
+          <strong>Effibel Team</strong>
+        </p>
+        <p style="font-size:12px;color:#888;">
+          This is an automated confirmation email.
+        </p>
+      `
+    },
+
+    et: {
+      admin: (d, isCompany) => `
+        <h2 style="color:#0066FF;">Uus päring saadud</h2>
+        <p><strong>Nimi:</strong> ${d.first_name} ${d.last_name}</p>
+        <p><strong>E-post:</strong> ${d.email}</p>
+        <p><strong>Esitaja:</strong> ${
+          isCompany ? `Ettevõte — ${d.company_name || 'Pole märgitud'}` : 'Eraisik'
+        }</p>
+        <p><strong>Teenused:</strong> ${d.services}</p>
+        <p><strong>Projekti tüüp:</strong> ${d.project_type}</p>
+        <p><strong>Projekti maht:</strong> ${d.project_scope}</p>
+        <p><strong>Hindamise ulatus:</strong> ${d.eval_scope || 'Puudub'}</p>
+        <p><strong>Lisainfo:</strong><br>
+        ${d.extra_info || 'Lisainfot ei esitatud.'}</p>
+      `,
+      client: (d) => `
+        <p>Tere ${d.first_name},</p>
+        <p>
+          Täname, et võtsite ühendust <strong>Effibeliga</strong>.
+          Oleme teie päringu teemal
+          <strong>${d.project_type}</strong> kätte saanud.
+        </p>
+        <p>
+          Meie meeskond vaatab selle üle ja vastab
+          <strong>24–48 tunni</strong> jooksul.
+        </p>
+        <p>
+          Lugupidamisega,<br>
+          <strong>Effibeli meeskond</strong>
+        </p>
+        <p style="font-size:12px;color:#888;">
+          Tegemist on automaatse kinnitusmeiliga.
+        </p>
+      `
+    },
+
+    ja: {
+      admin: (d, isCompany) => `
+        <h2 style="color:#0066FF;">新しいお問い合わせ</h2>
+        <p><strong>氏名:</strong> ${d.first_name} ${d.last_name}</p>
+        <p><strong>メール:</strong> ${d.email}</p>
+        <p><strong>区分:</strong> ${
+          isCompany ? `企業 — ${d.company_name || '未記入'}` : '個人'
+        }</p>
+        <p><strong>依頼内容:</strong> ${d.services}</p>
+        <p><strong>プロジェクト種別:</strong> ${d.project_type}</p>
+        <p><strong>範囲:</strong> ${d.project_scope}</p>
+        <p><strong>評価内容:</strong> ${d.eval_scope || 'なし'}</p>
+        <p><strong>詳細:</strong><br>
+        ${d.extra_info || '追加情報なし'}</p>
+      `,
+      client: (d) => `
+        <p>${d.first_name} 様</p>
+        <p>
+          <strong>Effibel</strong> へお問い合わせいただき、
+          誠にありがとうございます。
+          <strong>${d.project_type}</strong> に関するご依頼を受け付けました。
+        </p>
+        <p>
+          内容を確認のうえ、
+          <strong>24〜48時間以内</strong> にご連絡いたします。
+        </p>
+        <p>
+          敬具<br>
+          <strong>Effibel チーム</strong>
+        </p>
+        <p style="font-size:12px;color:#888;">
+          本メールは自動送信です。
+        </p>
+      `
+    },
+
+    es: {
+      admin: (d, isCompany) => `
+        <h2 style="color:#0066FF;">Nueva solicitud recibida</h2>
+        <p><strong>Nombre:</strong> ${d.first_name} ${d.last_name}</p>
+        <p><strong>Email:</strong> ${d.email}</p>
+        <p><strong>Entidad:</strong> ${
+          isCompany ? `Empresa — ${d.company_name || 'No proporcionado'}` : 'Persona individual'
+        }</p>
+        <p><strong>Servicios:</strong> ${d.services}</p>
+        <p><strong>Tipo de proyecto:</strong> ${d.project_type}</p>
+        <p><strong>Alcance:</strong> ${d.project_scope}</p>
+        <p><strong>Evaluación:</strong> ${d.eval_scope || 'Ninguna'}</p>
+        <p><strong>Detalles adicionales:</strong><br>
+        ${d.extra_info || 'No se proporcionaron detalles.'}</p>
+      `,
+      client: (d) => `
+        <p>Hola ${d.first_name},</p>
+        <p>
+          Gracias por contactar con <strong>Effibel</strong>.
+          Hemos recibido tu solicitud sobre
+          <strong>${d.project_type}</strong>.
+        </p>
+        <p>
+          Nuestro equipo la está revisando y te responderá
+          en un plazo de <strong>24–48 horas</strong>.
+        </p>
+        <p>
+          Saludos cordiales,<br>
+          <strong>Equipo Effibel</strong>
+        </p>
+        <p style="font-size:12px;color:#888;">
+          Este es un correo de confirmación automático.
+        </p>
+      `
+    }
+  };
+
+  // -------------------------
+  // Form Submission
+  // -------------------------
+  const form = document.getElementById('effibel-contact-form');
+  if (!form) return; // safety guard
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const lang = getCurrentLanguage();
+    const ui = UI_TEXT[lang] || UI_TEXT.en;
+
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = ui.sending;
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    const copy = EMAIL_COPY[lang] || EMAIL_COPY.en;
+
+    const serviceID = 'service_tkybs48';
+    const templateID = 'template_45eimmh';
+
+    const adminParams = {
+      recipient_email: 'hello@effibel.com',
+      subject_line: 'New Website Inquiry',
+      message_body: copy.admin(data)
+    };
+
+    const clientParams = {
+      recipient_email: data.email,
+      subject_line: 'Inquiry received — Effibel',
+      message_body: copy.client(data)
+    };
+
+    emailjs.send(serviceID, templateID, adminParams)
+      .then(() => emailjs.send(serviceID, templateID, clientParams))
+      .then(() => {
+        btn.textContent = ui.sent;
+        form.reset();
+      })
+      .catch((err) => {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = ui.error;
+      });
+  });
+
+});
+</script>
+
+</body>
+</html>
